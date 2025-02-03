@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="apache.commons.compress" type="repository">
+    <properties maven-id="org.apache.commons:commons-compress:1.6" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/apache/commons/commons-compress/1.6/commons-compress-1.6.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/tukaani/xz/1.4/xz-1.4.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

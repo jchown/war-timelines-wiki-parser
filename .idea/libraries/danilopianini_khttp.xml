@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="danilopianini.khttp" type="repository">
+    <properties maven-id="org.danilopianini:khttp:0.1.0-dev30+51fa9ae" />
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/org/danilopianini/khttp/0.1.0-dev30+51fa9ae/khttp-0.1.0-dev30+51fa9ae.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/jetbrains/kotlin/kotlin-stdlib/1.4.21/kotlin-stdlib-1.4.21.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/jetbrains/kotlin/kotlin-stdlib-common/1.4.21/kotlin-stdlib-common-1.4.21.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/jetbrains/annotations/13.0/annotations-13.0.jar!/" />
+      <root url="jar://$MAVEN_REPOSITORY$/org/json/json/20201115/json-20201115.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
