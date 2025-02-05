@@ -7,12 +7,16 @@ class Item(
 ) {
 
     companion object {
-        val HUMAN = "Q5"    
+        val HUMAN = "Q5"
         val FICTIONAL_HUMAN = "Q15632617"
-        val ARMED_CONFLICT = "Q350604"
-        val MILITARY_CONFLICT = "Q831663"
-        val BATTLE = "Q178561"
-        val WAR = "Q198"
+
+        const val ARMED_CONFLICT = "Q350604"
+        const val MILITARY_CONFLICT = "Q831663"
+        const val BATTLE = "Q178561"
+        const val WAR = "Q198"
+        const val WAR_OF_NATIONAL_LIBERATION = "Q1006311"
+        const val WAR_OF_INDEPENDENCE = "Q21994376"
+        const val INSURGENCY = "Q1323212"
 
         val INSTANCE_OF = "P31"
         val DATE_OF_BIRTH = "P569"
@@ -21,12 +25,17 @@ class Item(
         val UNKNOWN = "???"
         
         val keyNames = mapOf(
-            "Q5" to "human",
+
             WAR to "war",
             BATTLE to "battle",
             MILITARY_CONFLICT to "military conflict",
             ARMED_CONFLICT to "armed conflict",
-            "Q15632617" to "fictional human",
+            WAR_OF_INDEPENDENCE to "war of independence",
+            WAR_OF_NATIONAL_LIBERATION to "war of national liberation",
+            INSURGENCY to "insurgency",
+
+            HUMAN to "human",
+            FICTIONAL_HUMAN to "fictional human",
 
             "P18" to "image",
             "P31" to "instance of",

@@ -80,19 +80,15 @@ object FindWars {
     }
     @JvmStatic
     fun main(args: Array<String>) {
-        
-        val interestingParticipants = setOf(
-            "United Kingdom",
-            "Kingdom of England",
-            "Kingdom of Great Britain",
-            "British Army"
-        )
-        
+
         val interestingPages = setOf(
             Item.WAR,
             Item.BATTLE,
             Item.MILITARY_CONFLICT,
-            Item.ARMED_CONFLICT
+            Item.ARMED_CONFLICT,
+            Item.WAR_OF_NATIONAL_LIBERATION,
+            Item.WAR_OF_INDEPENDENCE,
+            Item.INSURGENCY
         )
         
         val wikidump = File("D:\\Work\\Data\\Wikidata\\wikidata-20241202-all.json.gz")
@@ -155,34 +151,6 @@ object FindWars {
                     }
 
                     downloadQueue.add(ConflictPage(item.id, pageName))
-
-                    /*
-                    val infoboxes = findInfoxboxes(wikiMarkup)
-                    
-                    val conflict = infoboxes.firstOrNull { it.contains("military conflict") }
-                    
-                    if (conflict == null) {
-                        println("$name has no infobox\n\n")
-                        continue
-                    }
-                    
-                    val participants = getCombatantsFromInfobox(conflict)
-                    if (!interestingParticipants.any { p ->
-                        participants.any { it.contains(p) }
-                    }) {
-                        println("$name - Not interested\n")
-                        continue
-                    }
-                     */
-                    
-
-//                    val deathDate = item.deathDate()
-//                    val items = itemsByDeathDate.computeIfAbsent(deathDate) { mutableListOf() }
-//                    items.add(item.toDeadPerson())
-//
-//                    if ((i % 1000) == 0) {
-//                        save(itemsByDeathDate)
-//                    }
                 }
            }
 
@@ -200,10 +168,6 @@ object FindWars {
 
             save(downloadedItems)
         }
-    }
-    
-    private fun escape(value: String): String {
-        return java.net.URLEncoder.encode(value, StandardCharsets.UTF_8.toString())
     }
 
     val objectMapper = ObjectMapper().writerWithDefaultPrettyPrinter()

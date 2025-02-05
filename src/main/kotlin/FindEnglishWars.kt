@@ -28,7 +28,7 @@ object FindEnglishWars {
             "British Army"
         )
 
-        val debugging = "Korean War"
+        val debugging = "American Revolutionary War"
 
         val articlesJson = File("$wikitextDir/wars.json").readText()
         val articles = objectReader.readValue(articlesJson, Map::class.java)
@@ -37,13 +37,16 @@ object FindEnglishWars {
         var found = 0
         val hierarchy = mutableMapOf<String, String>()
         val infoboxesPerPage = mutableMapOf<String, Map<String, String>>()
+        val pageNamesToArticleIds = mutableMapOf<String, String>()
 
         for (article in articles) {
 
             if (article.value == debugging)
                 println("Parsing ${article.key}")
 
-            val wikitext = File("$wikitextDir/${article.key}.wiki").readText()
+            val articleId = article.key as String
+            val articleName = article.value as String
+            val wikitext = File("$wikitextDir/${articleId}.wiki").readText()
             val infoboxes = findInfoxboxes(removeXmlComments(wikitext))
 
             for (infobox in infoboxes) {
@@ -53,8 +56,9 @@ object FindEnglishWars {
                 for (combatant in combatants) {
                     val name = combatant.substringAfter("=").trim()
                     if (interestingParticipants.any(name::contains)) {
-                        println("Found combatant in ${article.key}, ${article.value}")
-                        infoboxesPerPage[article.key as String] = keyValues
+                        println("Found combatant in ${articleId}, ${articleName}")
+                        infoboxesPerPage[articleId] = keyValues
+                        pageNamesToArticleIds[articleName] = articleId
                         found++
                         break
                     }
@@ -69,7 +73,7 @@ object FindEnglishWars {
             if (infobox.containsKey("partof")) {
                 val partOf = infobox["partof"]!!
                 val parents = findLinks(partOf)
-                val parent = parents.firstOrNull { infoboxesPerPage.containsKey(it) }
+                val parent = parents.firstOrNull { pageNamesToArticleIds.containsKey(it) }
                 if (parent != null) {
                     hierarchy[articleId] = parent
                     println("${articles[articleId]} is part of $parent")
