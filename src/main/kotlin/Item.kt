@@ -66,7 +66,7 @@ class Item(
         if (name.containsKey("en"))
             return name["en"]!!
 
-        return name.values.first()
+        return name.values.firstOrNull() ?: id
     }
 
     fun englishDescription(): String {

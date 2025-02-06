@@ -4,8 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.*
 
-object FindEnglishWars {
+object OrganiseEnglishWars {
     
     //  Run with --add-opens=java.base/java.net=ALL-UNNAMED
 
@@ -20,78 +21,31 @@ object FindEnglishWars {
 
     @JvmStatic
     fun main(args: Array<String>) {
-        
-        val interestingParticipants = setOf(
-            "United Kingdom",
-            "Kingdom of England",
-            "Kingdom of Great Britain",
-            "British Army",
-            "Cavalier",
-            "Roundhead",
-        )
-
-        val debugging = "Scottish–Norwegian War"
 
         val articlesJson = File("$wikitextDir/wars.json").readText()
         val articles = objectReader.readValue(articlesJson, Map::class.java)
+        val infoboxes = objectReader.readValue(File("$wikitextDir/interesting.json").readText(), Map::class.java)
+        val pageNamesToArticleIds = articles.map { (it.value as String).lowercase() to (it.key as String) }.toMap()
+        //  Make case insensitive
 
-        println("Loaded ${articles.keys.size} articles")
-        var found = 0
-        val infoboxesPerPage = mutableMapOf<String, Map<String, String>>()
-        val pageNamesToArticleIds = mutableMapOf<String, String>()
-
-        for (article in articles) {
-
-            if (article.value == debugging)
-                println("Parsing ${article.key}")
-
-            val articleId = article.key as String
-            val articleName = article.value as String
-            val wikitext = File("$wikitextDir/${articleId}.wiki").readText()
-            val infobox = Wikitext.findInfobox(removeXmlComments(wikitext), "military conflict")
-            if (infobox == null) {
-                println("No infobox found in ${articleId}, ${articleName}")
-                continue
-            }
-
-            var interesting = false
-            val keyValues = Wikitext.getKeyValuesFromInfobox(infobox)
-
-            val combatants = keyValues.filter { it.key.startsWith("combatant") && !it.key.contains("combatants_header") }.values
-            for (combatant in combatants) {
-                val name = combatant.substringAfter("=").trim()
-                if (interestingParticipants.any(name::contains)) {
-                    println("Found combatant in ${articleId}, ${articleName}")
-                    interesting = true
-                    break
-                }
-            }
-
-            if (!interesting) {
-                val place = keyValues["place"]
-                if (place != null && place.contains("England")) {
-                    println("Found England in ${articleId}, ${articleName}")
-                    interesting = true
-                }
-            }
-
-            if (interesting) {
-                found++
-                infoboxesPerPage[articleId] = keyValues
-                pageNamesToArticleIds[articleName] = articleId
+        /*  Look for duplicates
+        for (pageMapping in pageNamesToArticleIds) {
+            val articleId = pageMapping.value
+            if (articles[articleId].key == debugging) {
+                println("Found $debugging")
             }
         }
+        */
 
-        println("Found $found articles")
-        objectWriter.writeValue(File("$wikitextDir/interesting.json"), infoboxesPerPage)
+        println("Loaded ${infoboxes.keys.size} infoboxes")
 
-/*
-        for (articleId in infoboxesPerPage.keys) {
-            val infobox = infoboxesPerPage[articleId]!!
+        for (articleId in infoboxes.keys) {
+            val infobox = infoboxes[articleId]!! as Map<String, String>
             if (infobox.containsKey("partof")) {
                 val partOf = infobox["partof"]!!
                 val parents = Wikitext.findLinks(partOf)
-                val parent = parents.firstOrNull { pageNamesToArticleIds.containsKey(it) }
+                val parent = parents.firstOrNull { pageNamesToArticleIds.containsKey(it.lowercase()) }
+/*
                 if (parent == null) {
                     //  We don't have a parent article.
                     if (missingPages.containsKey(partOf)) {
@@ -100,15 +54,16 @@ object FindEnglishWars {
                         missingPages[partOf] = articles[articleId] as String
                     }
                 }
+
+ */
                 if (parent != null) {
-                    hierarchy[articleId] = parent
+//                    hierarchy[articleId] = parent
                     println("${articles[articleId]} is part of $parent")
                 } else if (parents.isNotEmpty()) {
                     println("${articles[articleId]} missing parent: ${parents.joinToString(", ")}")
                 }
             }
         }
- */
     }
 
     private fun removeXmlComments(wikitext: String): String {

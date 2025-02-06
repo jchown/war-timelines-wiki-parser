@@ -81,16 +81,86 @@ object FindWars {
     @JvmStatic
     fun main(args: Array<String>) {
 
-        val interestingPages = setOf(
-            Item.WAR,
-            Item.BATTLE,
-            Item.MILITARY_CONFLICT,
-            Item.ARMED_CONFLICT,
-            Item.WAR_OF_NATIONAL_LIBERATION,
-            Item.WAR_OF_INDEPENDENCE,
-            Item.INSURGENCY
+        //  Filtered list from SPARQL query:
+        //  SELECT ?item ?itemLabel WHERE {
+        //    ?subclass wdt:P279* wd:Q71266556.
+        //    SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
+        //  }
+        //
+        //  plus a couple that were missed
+
+        val warTypes = mapOf(
+            "Q12546" to	"Crusades",
+            "Q2490042" to "Princely rebellion",
+            "Q4348173" to "absolute war",
+            "Q1897017" to "air battle",
+            "Q350604" to "armed conflict",
+            "Q178561" to "battle",
+            "Q4927953" to "bloodless war",
+            "Q107637520" to "border conflict",
+            "Q5392931" to "cavalry raid",
+            "Q8465" to "civil war",
+//            "Q180684" to "conflict",
+            "Q2659056" to "colonial war",
+            "Q429245" to "conventional warfare",
+            "Q11552344" to "decisive warfare",
+            "Q2518545" to "defensive war",
+            "Q11682254" to "dirty war",
+            "Q77597785" to "drug war",
+            "Q766875" to "ethnic conflict",
+            "Q48767773" to "engagement",
+            "Q21978021" to "federal war",
+            "Q9266805" to "general battle",
+            "Q1190472" to "ground warfare",
+            "Q13573188" to "holy war",
+            "Q1323212" to "insurgency",
+            "Q109311521" to "internal armed conflict",
+            "Q2247326" to "limited war",
+            "Q25512705" to "main battle",
+            "Q15991159" to "medieval battle",
+            "Q814290" to "meeting engagement",
+            "Q831663" to "military campaign",
+            "Q131782363" to "military conflict",
+            "Q131656428" to "military convoy",
+            "Q25416338" to "military convoy series",
+            "Q1384277" to "military expedition",
+            "Q1348131" to "modern warfare",
+            "Q1261499" to "naval battle",
+            "Q17772965" to "naval capture",
+            "Q743488" to "pitched battle",
+            "Q9377327" to "preemptive war",
+            "Q969619" to "preventive war",
+            "Q864113" to "proxy war",
+            "Q1827102" to "religious war",
+            "Q111660983" to "resource war",
+            "Q3119121" to "revolutionary war",
+            "Q11396978" to "sanctions war",
+            "Q3774758" to "sectarian violence",
+            "Q104212151" to "series of wars",
+            "Q4277662" to "short victorious war",
+            "Q188055" to "siege",
+            "Q12041935" to "siege in the Middle Ages",
+            "Q997267" to "skirmish",
+            "Q718893" to "theater of war",
+            "Q154605" to "total war",
+            "Q232777" to "two-front war",
+            "Q1342628" to "unconventional warfare",
+            "Q7883019" to "undeclared war",
+            "Q198" to "war",
+            "Q842332" to "war front",
+            "Q752646" to "war of annihilation",
+            "Q21994376" to "war of independence",
+            "Q1006311" to "war of national liberation",
+            "Q3119022" to "war of pacification",
+            "Q1348385" to "war of succession",
+            "Q105370834" to "war phase",
+            "Q71266556" to "warfare and armed conflicts",
+            "Q130525743" to "wars of individual sovereign",
+            "Q103495" to "world war"
         )
-        
+
+        val interestingPages = warTypes.keys
+
         val wikidump = File("D:\\Work\\Data\\Wikidata\\wikidata-20241202-all.json.gz")
 
         val downloadQueue = Collections.synchronizedList(mutableListOf<ConflictPage>())
@@ -142,7 +212,7 @@ object FindWars {
                     }
 
                     val name = item.englishName()
-                    println("Found $name")
+                    println("Found $name (${warTypes[item.instanceOf()]})")
 
                     val pageName = item.englishWikipediaPageName()
                     if (pageName == null) {
