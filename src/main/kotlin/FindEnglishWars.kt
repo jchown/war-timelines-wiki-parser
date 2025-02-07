@@ -26,6 +26,11 @@ object FindEnglishWars {
             "Kingdom of England",
             "Kingdom of Great Britain",
             "British Army",
+            "English Army",
+            "British Empire",
+            "Royal Navy",
+            "British America",
+            "Middle Colonies",
             "Cavalier",
             "Roundhead",
         )

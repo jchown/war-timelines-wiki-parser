@@ -18,13 +18,14 @@ object OrganiseEnglishWars {
     val tabSize = 2
 
     val wikitextDir = "D:\\Work\\Data\\war-timelines-wikitext"
+    val root = "<root>"
 
     @JvmStatic
     fun main(args: Array<String>) {
 
         val articlesJson = File("$wikitextDir/wars.json").readText()
-        val articles = objectReader.readValue(articlesJson, Map::class.java)
-        val infoboxes = objectReader.readValue(File("$wikitextDir/interesting.json").readText(), Map::class.java)
+        val articles = objectReader.readValue(articlesJson, Map::class.java) as Map<String, String>
+        val infoboxes = objectReader.readValue(File("$wikitextDir/interesting.json").readText(), Map::class.java) as Map<String, Map<String, String>>
         val pageNamesToArticleIds = articles.map { (it.value as String).lowercase() to (it.key as String) }.toMap()
         //  Make case insensitive
 
@@ -39,31 +40,76 @@ object OrganiseEnglishWars {
 
         println("Loaded ${infoboxes.keys.size} infoboxes")
 
-        for (articleId in infoboxes.keys) {
-            val infobox = infoboxes[articleId]!! as Map<String, String>
+        val hierarchy = mutableMapOf<String, String>()
+        val toFindParent = infoboxes.keys.toMutableList()
+
+        while (!toFindParent.isEmpty()) {
+
+            val articleId = toFindParent.removeAt(0)
+            val infobox = infoboxes[articleId]!!
+
             if (infobox.containsKey("partof")) {
                 val partOf = infobox["partof"]!!
-                val parents = Wikitext.findLinks(partOf)
-                val parent = parents.firstOrNull { pageNamesToArticleIds.containsKey(it.lowercase()) }
-/*
-                if (parent == null) {
-                    //  We don't have a parent article.
-                    if (missingPages.containsKey(partOf)) {
-                        missingPages[partOf] = missingPages[partOf] + ", " + articles[articleId]
+                val partOfLinks = Wikitext.findLinks(partOf)
+                val parents = partOfLinks.filter { pageNamesToArticleIds.containsKey(it.lowercase()) }
+
+                //  Only choose a parent if we already have it in the hierarchy
+
+                if (parents.size == 0) {
+
+                    hierarchy[articleId] = root
+                    println("${articles[articleId]} is a root article")
+
+                } else if (parents.size == 1) {
+
+                    val parent = parents.first()
+                    val parentId = pageNamesToArticleIds[parent.lowercase()]!!
+                    hierarchy[articleId] = parentId
+                    println("${articles[articleId]} is part of $parent")
+
+                } else {
+
+                    //  Multiple candidates - we will choose the deepest (most specific) one,
+                    //  if they've all been added to the hierarchy already.
+
+                    if (parents.all { hierarchy.containsKey(pageNamesToArticleIds[it.lowercase()]!!) }) {
+
+                        var deepestDepth = -1
+                        var deepestName = ""
+
+                        for (i in 0 .. parents.size) {
+                            val depth = getDepth(pageNamesToArticleIds[parents[i]]!!, hierarchy)
+                            if (depth > deepestDepth) {
+                                deepestDepth = depth
+                                deepestName = parents[i]
+                            }
+                        }
+
+                        hierarchy[articleId] = pageNamesToArticleIds[deepestName.lowercase()]!!
+                        println("${articles[articleId]} is part of $deepestName")
+
                     } else {
-                        missingPages[partOf] = articles[articleId] as String
+
+                        toFindParent.add(articleId)
+                        println("Not ready to add ${articles[articleId]} tp the hierarchy")
+
                     }
                 }
+            } else {
 
- */
-                if (parent != null) {
-//                    hierarchy[articleId] = parent
-                    println("${articles[articleId]} is part of $parent")
-                } else if (parents.isNotEmpty()) {
-                    println("${articles[articleId]} missing parent: ${parents.joinToString(", ")}")
-                }
+                hierarchy[articleId] = root
+                println("${articles[articleId]} is a root article")
+
             }
         }
+    }
+
+    private fun getDepth(articleId: String, hierarchy: MutableMap<String, String>): Int {
+        if (articleId == root)
+            return 0
+        if (!hierarchy.containsKey(articleId))
+            throw Exception("No hierarchy for $articleId")
+        return 1 + getDepth(hierarchy[articleId]!!, hierarchy)
     }
 
     private fun removeXmlComments(wikitext: String): String {

@@ -63,7 +63,7 @@ object Wikitext  {
 
             val link = text.substring(start + 2, end)
             if (link.contains("|"))
-                links.add(link.substringAfter("|"))
+                links.add(link.substringBefore("|"))
             else
                 links.add(link)
 
