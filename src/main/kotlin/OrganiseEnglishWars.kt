@@ -17,7 +17,7 @@ object OrganiseEnglishWars {
     var tab = ""
     val tabSize = 2
 
-    val wikitextDir = "D:\\Work\\Data\\war-timelines-wikitext"
+    val wikitextDir = Storage.WikitextDirectory
     val root = "<root>"
 
     @JvmStatic
@@ -26,7 +26,7 @@ object OrganiseEnglishWars {
         val articlesJson = File("$wikitextDir/wars.json").readText()
         val articles = objectReader.readValue(articlesJson, Map::class.java) as Map<String, String>
         val infoboxes = objectReader.readValue(File("$wikitextDir/interesting.json").readText(), Map::class.java) as Map<String, Map<String, String>>
-        val pageNamesToArticleIds = articles.map { (it.value as String).lowercase() to (it.key as String) }.toMap()
+        val pageNamesToArticleIds = articles.filter { infoboxes.containsKey(it.key) }.map { it.value.lowercase() to it.key }.toMap()
         //  Make case insensitive
 
         /*  Look for duplicates
@@ -43,65 +43,96 @@ object OrganiseEnglishWars {
         val hierarchy = mutableMapOf<String, String>()
         val toFindParent = infoboxes.keys.toMutableList()
 
+        val debuggingId = "Q795269"
+
         while (!toFindParent.isEmpty()) {
 
-            val articleId = toFindParent.removeAt(0)
-            val infobox = infoboxes[articleId]!!
+            val articlePass = toFindParent.toList()
+            toFindParent.clear()
+            var found = 0
 
-            if (infobox.containsKey("partof")) {
-                val partOf = infobox["partof"]!!
-                val partOfLinks = Wikitext.findLinks(partOf)
-                val parents = partOfLinks.filter { pageNamesToArticleIds.containsKey(it.lowercase()) }
+            for (articleId in articlePass) {
+                val infobox = infoboxes[articleId]!!
 
-                //  Only choose a parent if we already have it in the hierarchy
+                if (articleId == debuggingId) {
+                    println("Debugging $debuggingId")
+                }
 
-                if (parents.size == 0) {
+                if (infobox.containsKey("partof")) {
+                    val partOf = infobox["partof"]!!
+                    val partOfLinks = Wikitext.findLinks(partOf)
+                    val parents = partOfLinks.filter { pageNamesToArticleIds.containsKey(it.lowercase()) }
+                    val parentIds = parents.map { pageNamesToArticleIds[it.lowercase()]!! }
+
+                    //  Only choose a parent if we already have it in the hierarchy
+
+                    if (parents.size == 0) {
+
+                        hierarchy[articleId] = root
+                        println("${articles[articleId]} is a root article")
+                        found++
+
+                    } else if (parents.size == 1) {
+
+                        val parent = parents.first()
+                        val parentId = pageNamesToArticleIds[parent.lowercase()]!!
+
+                        if (hierarchy.containsKey(parentId)) {
+                            hierarchy[articleId] = parentId
+                            println("${articles[articleId]} is part of $parent")
+                            found++
+                        } else {
+                            toFindParent.add(articleId)
+                        }
+
+                    } else {
+
+                        //  Multiple candidates - we will choose the deepest (most specific) one,
+                        //  if they've all been added to the hierarchy already.
+
+                        if (parentIds.all { hierarchy.containsKey(it) }) {
+
+                            var deepestDepth = -1
+                            var deepestName = ""
+                            var deepestId = ""
+
+                            for (i in 0..parents.size - 1) {
+                                val depth = getDepth(parentIds[i], hierarchy)
+                                if (depth > deepestDepth) {
+                                    deepestDepth = depth
+                                    deepestName = parents[i]
+                                    deepestId = parentIds[i]
+                                }
+                            }
+
+                            hierarchy[articleId] = deepestId
+                            println("${articles[articleId]} is part of $deepestName")
+                            found++
+
+                        } else {
+
+                            toFindParent.add(articleId)
+
+                        }
+                    }
+                } else {
 
                     hierarchy[articleId] = root
                     println("${articles[articleId]} is a root article")
 
-                } else if (parents.size == 1) {
-
-                    val parent = parents.first()
-                    val parentId = pageNamesToArticleIds[parent.lowercase()]!!
-                    hierarchy[articleId] = parentId
-                    println("${articles[articleId]} is part of $parent")
-
-                } else {
-
-                    //  Multiple candidates - we will choose the deepest (most specific) one,
-                    //  if they've all been added to the hierarchy already.
-
-                    if (parents.all { hierarchy.containsKey(pageNamesToArticleIds[it.lowercase()]!!) }) {
-
-                        var deepestDepth = -1
-                        var deepestName = ""
-
-                        for (i in 0 .. parents.size) {
-                            val depth = getDepth(pageNamesToArticleIds[parents[i]]!!, hierarchy)
-                            if (depth > deepestDepth) {
-                                deepestDepth = depth
-                                deepestName = parents[i]
-                            }
-                        }
-
-                        hierarchy[articleId] = pageNamesToArticleIds[deepestName.lowercase()]!!
-                        println("${articles[articleId]} is part of $deepestName")
-
-                    } else {
-
-                        toFindParent.add(articleId)
-                        println("Not ready to add ${articles[articleId]} tp the hierarchy")
-
-                    }
                 }
-            } else {
+            }
 
-                hierarchy[articleId] = root
-                println("${articles[articleId]} is a root article")
-
+            if (found == 0) {
+                println("Found no parents for ${toFindParent.size} articles: ${toFindParent.joinToString(", ")}")
+                break
             }
         }
+
+        println("Found ${hierarchy.keys.size} articles in hierarchy")
+
+        val hierarchyJson = objectWriter.writeValueAsString(hierarchy)
+        File("$wikitextDir/hierarchy.json").writeText(hierarchyJson)
     }
 
     private fun getDepth(articleId: String, hierarchy: MutableMap<String, String>): Int {

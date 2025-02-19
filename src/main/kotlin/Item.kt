@@ -1,4 +1,5 @@
 class Item(
+    val type: String,
     val id: String,
     val name: Map<String, String>,
     val description: Map<String, String>,

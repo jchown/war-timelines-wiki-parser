@@ -16,7 +16,7 @@ object FindEnglishWars {
     var tab = ""
     val tabSize = 2
 
-    val wikitextDir = "D:\\Work\\Data\\war-timelines-wikitext"
+    val wikitextDir = Storage.WikitextDirectory
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -33,9 +33,13 @@ object FindEnglishWars {
             "Middle Colonies",
             "Cavalier",
             "Roundhead",
+            "Parliament of England",
+            "Coalition forces of the Napoleonic Wars",
+            "Allies of World War I",
+            "Allies of World War II"
         )
 
-        val debugging = "Scottish–Norwegian War"
+        val debugging = "Q362"
 
         val articlesJson = File("$wikitextDir/wars.json").readText()
         val articles = objectReader.readValue(articlesJson, Map::class.java)
@@ -47,7 +51,7 @@ object FindEnglishWars {
 
         for (article in articles) {
 
-            if (article.value == debugging)
+            if (article.key == debugging)
                 println("Parsing ${article.key}")
 
             val articleId = article.key as String

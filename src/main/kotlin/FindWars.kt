@@ -23,7 +23,7 @@ object FindWars {
     var tab = ""
     val tabSize = 2
 
-    val outputDir = "D:\\Work\\Data\\war-timelines-wikitext"
+    val outputDir = Storage.WikitextDirectory
     val downloadedItems = mutableMapOf<String, String>()
     val failedItems = mutableListOf<ConflictPage>()
 
@@ -124,7 +124,7 @@ object FindWars {
             "Q131656428" to "military convoy",
             "Q25416338" to "military convoy series",
             "Q1384277" to "military expedition",
-            "Q7533291" to "military operation",
+            "Q645883" to "military operation",
             "Q1348131" to "modern warfare",
             "Q1261499" to "naval battle",
             "Q17772965" to "naval capture",
@@ -162,7 +162,10 @@ object FindWars {
 
         val interestingPages = warTypes.keys
 
-        val wikidump = File("D:\\Work\\Data\\Wikidata\\wikidata-20241202-all.json.gz")
+        println("Reading wikidata dump ${Storage.WikiDump}")
+        val wikidump = File(Storage.WikiDump)
+
+        val debugging = ""  //"Q7533291"
 
         val downloadQueue = Collections.synchronizedList(mutableListOf<ConflictPage>())
         val finished = AtomicBoolean(false)
@@ -171,7 +174,7 @@ object FindWars {
         val downloader = Thread {
             while (!finished.get()) {
 
-                Thread.sleep(1000)
+                Thread.sleep(100)
 
                 if (downloadQueue.size > 0) {
                     val page = downloadQueue.removeAt(0)
@@ -204,8 +207,12 @@ object FindWars {
                     if (item == noMoreItems)
                         break
 
-                    if (++numParsed % 10000 == 0) {
+                    if (++numParsed % 100000 == 0) {
                         println("Parsed $numParsed articles")
+                    }
+
+                    if (debugging != "" && item.id != debugging) {
+                        continue
                     }
                     
                     if (!item.isInstanceOf(interestingPages)) {
@@ -247,7 +254,7 @@ object FindWars {
         objectMapper.writeValue(File("$outputDir/wars.json"), items)
     }
     
-    val noMoreItems = Item("", mapOf(), mapOf(), mapOf(), mapOf())
+    val noMoreItems = Item("", "", mapOf(), mapOf(), mapOf(), mapOf())
 
     private fun readItem(jParser: JsonParser): Item? {
         val token = nextToken(jParser)
@@ -258,6 +265,7 @@ object FindWars {
             throw Exception("Expected object but was $token")
 
         var id = "?"
+        var type = ""
         var name = mapOf<String, String>()
         var description = mapOf<String, String>()
         var claims = mapOf<String, String>()
@@ -266,24 +274,13 @@ object FindWars {
         do {
             when (val token = nextToken(jParser)) {
                 JsonToken.END_OBJECT -> {
-                    return Item(id, name, description, claims, sitelinks)
+                    return Item(type, id, name, description, claims, sitelinks)
                 }
                 JsonToken.FIELD_NAME -> {
                     when (val key = jParser.valueAsString) {
 
                         "type" -> {
-                            val typeValue = nextValueAsString(jParser)
-                            if (typeValue != "item") {
-                                
-                                if (typeValue == "property") {      // Was a PXXX not a QXXX, e.g. a relationship type
-                                    skipUntil(jParser, JsonToken.END_OBJECT)
-                                    return null
-                                }
-                                
-                                println("Expected 'item' but was '$typeValue'")
-                                skipUntil(jParser, JsonToken.END_OBJECT)
-                                return null
-                            }
+                            type = nextValueAsString(jParser)
                         }
 
                         "id" -> {
@@ -695,20 +692,40 @@ object FindWars {
 
     private fun nextToken(jParser: JsonParser): JsonToken {
         val token = jParser.nextToken()!!
-        when (token) {
-            JsonToken.NOT_AVAILABLE -> logln("n/a")
-            JsonToken.START_OBJECT -> { logln("\n$tab{"); tabIn() }
-            JsonToken.END_OBJECT -> { tabOut(); logln("$tab}") }
-            JsonToken.START_ARRAY -> { logln("\n$tab["); tabIn() }
-            JsonToken.END_ARRAY -> { tabOut(); logln("$tab]") }
-            JsonToken.FIELD_NAME -> { log("$tab\"${jParser.valueAsString}\":") }
-            JsonToken.VALUE_EMBEDDED_OBJECT -> log("\$object")
-            JsonToken.VALUE_STRING -> logln("\"${jParser.valueAsString}\"")
-            JsonToken.VALUE_NUMBER_INT -> logln("${jParser.valueAsLong}")
-            JsonToken.VALUE_NUMBER_FLOAT -> logln("${jParser.valueAsDouble}")
-            JsonToken.VALUE_TRUE -> logln("true")
-            JsonToken.VALUE_FALSE -> logln("false")
-            JsonToken.VALUE_NULL -> logln("null")
+
+        if (logging) {
+
+            when (token) {
+
+                JsonToken.NOT_AVAILABLE -> logln("n/a")
+                JsonToken.START_OBJECT -> {
+                    logln("\n$tab{"); tabIn()
+                }
+
+                JsonToken.END_OBJECT -> {
+                    tabOut(); logln("$tab}")
+                }
+
+                JsonToken.START_ARRAY -> {
+                    logln("\n$tab["); tabIn()
+                }
+
+                JsonToken.END_ARRAY -> {
+                    tabOut(); logln("$tab]")
+                }
+
+                JsonToken.FIELD_NAME -> {
+                    log("$tab\"${jParser.valueAsString}\":")
+                }
+
+                JsonToken.VALUE_EMBEDDED_OBJECT -> log("\$object")
+                JsonToken.VALUE_STRING -> logln("\"${jParser.valueAsString}\"")
+                JsonToken.VALUE_NUMBER_INT -> logln("${jParser.valueAsLong}")
+                JsonToken.VALUE_NUMBER_FLOAT -> logln("${jParser.valueAsDouble}")
+                JsonToken.VALUE_TRUE -> logln("true")
+                JsonToken.VALUE_FALSE -> logln("false")
+                JsonToken.VALUE_NULL -> logln("null")
+            }
         }
 
         key = if (token == JsonToken.FIELD_NAME)
